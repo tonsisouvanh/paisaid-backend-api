@@ -1,0 +1,333 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PriceRange {
+  LOW // $
+  MEDIUM // $$
+  HIGH // $$$
+  LUXURY // $$$$
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// User model
+model User {
+  id             Int        @id @default(autoincrement())
+  email          String     @unique
+  password       String? // Hashed password (null for social logins)
+  name           String?
+  profilePic     String?    @map("profile_pic") // URL to profile picture
+  gender         Gender?
+  status         UserStatus @default(INACTIVE)
+  lastLoginAt    DateTime?  @map("last_login_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  isActive       Boolean    @default(true) @map("is_active")
+  posts          Post[] // Posts created by admin/users
+  reviews        Review[] // Reviews written by users
+  questions      Question[] // Q&A contributions
+  answers        Answer[] // Answers to Q&A
+  photos         Photo[] // User-uploaded photos
+  bookmarks      Bookmark[] // Favorite places
+  socialId       String?    @unique @map("social_id")
+  socialProvider String?    @map("social_provider") // e.g., "google", "facebook"
+  role           Role       @relation(fields: [roleId], references: [id])
+  roleId         Int        @map("role_id")
+  phone          String?
+  username       String     @unique
+  address        String?
+  dob            DateTime?
+
+  @@index([email])
+  @@map("users")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(255)
+  slug            String           @unique
+  users           User[]
+  isActive        Boolean          @default(true) @map("is_active")
+  description     String?          @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
+  rolePermissions RolePermission[]
+  roleMenus       RoleMenu[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(255)
+  action          String           @unique
+  isActive        Boolean          @default(true) @map("is_active")
+  description     String?          @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
+  rolePermissions RolePermission[]
+  resource        Resource?        @relation(fields: [resourceId], references: [id])
+  resourceId      Int?             @map("resource_id")
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@index([roleId, permissionId], name: "role_permission_index")
+  @@map("role_permissions")
+}
+
+model Menu {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar(255) // e.g., "Dashboard", "Users"
+  slug        String     @unique @db.VarChar(255) // e.g., "dashboard", "users"
+  path        String?    @db.VarChar(255) // e.g., "/dashboard", "/cms/users"
+  icon        String?    @db.VarChar(255) // e.g., "dashboard", "user" (icon class or name)
+  parentId    Int?       @map("parent_id") // For nested menus (self-referencing)
+  parent      Menu?      @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children    Menu[]     @relation("MenuHierarchy")
+  isActive    Boolean    @default(true) @map("is_active")
+  order       Int        @default(0) // For sorting menu items
+  description String?    @db.Text // e.g., "View system overview"
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+  roleMenus   RoleMenu[] // Many-to-many with Role
+
+  @@map("menus")
+}
+
+model RoleMenu {
+  id        Int      @id @default(autoincrement())
+  roleId    Int      @map("role_id")
+  menuId    Int      @map("menu_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, menuId])
+  @@map("role_menus")
+}
+
+model Resource {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique @db.VarChar(255) // e.g., "position", "branch"
+  slug        String       @unique @db.VarChar(255) // e.g., "position", "branch"
+  description String?      @db.Text // e.g., "Job positions in the system"
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
+  permissions Permission[] // Many-to-many with Permission (optional)
+
+  @@map("resources")
+}
+
+// Category model
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique // e.g., "Cafes", "Restaurants"
+  parentId  Int?       @map("parent_id") // For subcategories (e.g., "Coffee Shops" under "Cafes")
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  posts     Post[] // Posts in this category
+  tags      Tag[] // Many-to-many with tags
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+// Tag model
+model Tag {
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+  categories Category[] // Many-to-many with categories
+  posts      Post[] // Many-to-many with posts
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@map("tags")
+}
+
+// Post model
+model Post {
+  id           String      @id @default(uuid())
+  title        String
+  slug         String      @unique // e.g., "best-cafe-nyc"
+  content      String      @db.Text
+  authorId     Int         @map("author_id")
+  author       User        @relation(fields: [authorId], references: [id])
+  categoryId   Int         @map("category_id")
+  category     Category    @relation(fields: [categoryId], references: [id])
+  tags         Tag[] // Many-to-many for filtering (e.g., "Pet-Friendly")
+  status       PostStatus  @default(DRAFT)
+  priceRange   PriceRange? @map("price_range") // e.g., "$$"
+  address      String? // Full address (e.g., "123 Main St, NYC")
+  city         String? // For filtering
+  country      String? // For filtering
+  latitude     Float? // For maps
+  longitude    Float? // For maps
+  phone        String? // Contact info
+  website      String? // External link
+  openingHours Json?       @map("opening_hours") // e.g., "Mon-Fri 9AM-5PM" (could be JSON for more structure)
+  photos       Photo[] // User/admin-uploaded photos
+  reviews      Review[] // User reviews
+  questions    Question[] // Q&A section
+  avgRating    Float?      @default(0) @map("avg_rating") // Cached
+  reviewCount  Int         @default(0) @map("review_count") // Cached
+  viewCount    Int         @default(0) @map("view_count")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  bookmarks    Bookmark[] // Users who bookmarked this
+
+  @@index([categoryId])
+  @@index([city])
+  @@index([country])
+  @@index([slug])
+  @@index([avgRating])
+  @@index([viewCount])
+  @@map("posts")
+}
+
+// Review model
+model Review {
+  id         Int      @id @default(autoincrement())
+  content    String
+  rating     Int // 1-5 stars
+  userId     Int      @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  postId     String   @map("post_id")
+  post       Post     @relation(fields: [postId], references: [id])
+  isApproved Boolean  @default(false) @map("is_approved") // Admin moderation
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([postId])
+  @@index([userId])
+  @@index([isApproved])
+  @@map("reviews")
+}
+
+// Photo model
+model Photo {
+  id         Int      @id @default(autoincrement())
+  url        String // S3 or similar URL
+  publicId   String   @map("public_id")
+  altText    String?  @map("alt_text") // SEO/accessibility
+  userId     Int?     @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id])
+  postId     String   @map("post_id")
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  isFeatured Boolean  @default(false) @map("is_featured") // Highlighted photo
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([postId])
+  @@index([userId])
+  @@map("photos")
+}
+
+// Question model
+model Question {
+  id        Int      @id @default(autoincrement())
+  content   String
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String   @map("post_id")
+  post      Post     @relation(fields: [postId], references: [id])
+  answers   Answer[] // Responses to this question
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([postId])
+  @@index([userId])
+  @@map("questions")
+}
+
+// Answer model
+model Answer {
+  id         Int      @id @default(autoincrement())
+  content    String
+  userId     Int      @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  questionId Int      @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([questionId])
+  @@index([userId])
+  @@map("answers")
+}
+
+// Bookmark model
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String   @map("post_id")
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, postId]) // Prevent duplicate bookmarks
+  @@index([userId])
+  @@index([postId])
+  @@map("bookmarks")
+}
+
+model District {
+  id           Int       @id @default(autoincrement())
+  districtName String    @map("district_name") @db.VarChar(255) // Xaysettha
+  districtCode String?   @map("district_code") @db.VarChar(255) // XST, XPT, XNT
+  nameEng      String    @map("name_eng") @db.VarChar(255) // English name
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  province     Province  @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  provinceId   Int       @map("province_id")
+
+  @@map("districts")
+}
+
+model Province {
+  id           Int        @id @default(autoincrement())
+  provinceName String     @unique @map("province_name") @db.VarChar(255) // Vientiane
+  provinceCode String     @unique @map("province_code") @db.VarChar(255) // VT, SLV, SVK 
+  nameEng      String     @map("name_eng") @db.VarChar(255) // English name
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+  districts    District[]
+
+  @@map("provinces")
+}
