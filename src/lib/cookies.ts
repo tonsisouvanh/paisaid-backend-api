@@ -7,7 +7,7 @@ export const REFRESH_TOKEN_COOKIE_MAX_AGE_DEV = 60 * 60 * 1000; // 1 hour
 
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === "production"
-    ? "paisaid-backend-api.onrender.com"
+    ? ".paisaid-backend-api.onrender.com"
     : "localhost";
 
 export const setAccessTokenCookie = (
@@ -17,7 +17,7 @@ export const setAccessTokenCookie = (
   res.cookie("access_token", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
     path: "/",
     domain: COOKIE_DOMAIN,
     maxAge:
@@ -34,7 +34,7 @@ export const setRefreshTokenCookie = (
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
     path: "/",
     domain: COOKIE_DOMAIN,
     maxAge:
@@ -44,11 +44,11 @@ export const setRefreshTokenCookie = (
   });
 };
 
-export const clearAccressToken = (res: Response): void => {
+export const clearAccessToken = (res: Response): void => {
   res.clearCookie("access_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
     path: "/",
     domain: COOKIE_DOMAIN,
   });
@@ -57,7 +57,7 @@ export const clearRefreshToken = (res: Response): void => {
   res.clearCookie("refresh_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
     path: "/",
     domain: COOKIE_DOMAIN,
   });

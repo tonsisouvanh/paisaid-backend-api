@@ -5,7 +5,7 @@ import prisma from "../lib/prisma";
 import { getLocalDateTime } from "../lib/utils";
 import { verifyJWT } from "../middleware/authMiddleware";
 import {
-  clearAccressToken,
+  clearAccessToken,
   clearRefreshToken,
   setAccessTokenCookie,
   setRefreshTokenCookie,
@@ -185,7 +185,7 @@ export const clearTokens = async (
     if (secret !== process.env.CLEAR_TOKEN_SECRET) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-    clearAccressToken(res);
+    clearAccessToken(res);
     clearRefreshToken(res);
 
     res.status(200).json({ message: "Tokens cleared successfully" });
