@@ -147,26 +147,8 @@ export const signOut = async (
       });
     }
     // Clear cookies with matching attributes
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      domain:
-        process.env.NODE_ENV === "production"
-          ? ".recruit.devton.xyz"
-          : undefined,
-      path: "/",
-    });
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      domain:
-        process.env.NODE_ENV === "production"
-          ? ".recruit.devton.xyz"
-          : undefined,
-      path: "/",
-    });
+    clearAccessToken(res);
+    clearRefreshToken(res);
 
     res.json({ message: "Logout successful" });
   } catch (error) {

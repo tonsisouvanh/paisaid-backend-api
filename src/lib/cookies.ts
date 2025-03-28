@@ -92,7 +92,7 @@ export const setAccessTokenCookie = (
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: ".devton.xyz",
+    domain: "devton.xyz",
     path: "/",
     maxAge:
       process.env.NODE_ENV === "production"
@@ -109,7 +109,7 @@ export const setRefreshTokenCookie = (
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: ".devton.xyz",
+    domain: "devton.xyz",
     path: "/",
     maxAge:
       process.env.NODE_ENV === "production"
@@ -123,6 +123,7 @@ export const clearAccessToken = (res: Response): void => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    domain: "devton.xyz",
     path: "/",
   });
 };
@@ -132,6 +133,7 @@ export const clearRefreshToken = (res: Response): void => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    domain: "devton.xyz",
     path: "/",
   });
 };
