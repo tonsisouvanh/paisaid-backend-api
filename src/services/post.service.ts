@@ -1,6 +1,6 @@
 import { PrismaClient, Post, PriceRange } from "@prisma/client";
-import { getLocalDateTime, slugify } from "lib/utils";
 import { uploadImageToCloudinary } from "./upload-cloudinary.serverice";
+import { getLocalDateTime, slugify } from "../lib/utils";
 
 const prisma = new PrismaClient();
 

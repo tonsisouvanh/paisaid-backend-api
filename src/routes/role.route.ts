@@ -1,4 +1,3 @@
-import { authenticate } from "../middleware/authMiddleware";
 import {
   createRole,
   createRoleWithPermission,
@@ -12,10 +11,11 @@ import express, { Router } from "express";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
 import { validateData } from "../middleware/validationMiddleware";
 import { RoleSchema } from "../schemas/role.schema";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 
-router.use(authenticate, authorizePermissions());
+router.use(verifyJWT, authorizePermissions());
 
 router.get("/role-listing", getRoles);
 router.get("/one/:id", getRole);

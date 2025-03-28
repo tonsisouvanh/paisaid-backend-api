@@ -1,9 +1,10 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "ES6",
-    "lib": ["ES6", "esnext.asynciterable"],
+    "target": "es2020",
+    "lib": ["es2020", "esnext.asynciterable"],
     "typeRoots": ["node_modules/@types"],
+    "types": ["node"],
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -13,13 +14,12 @@
     "pretty": true,
     "sourceMap": true,
     "declaration": true,
-    "outDir": "dist",
+    "outDir": "./dist",
     "strict": true,
     "allowJs": true,
     "noEmit": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "baseUrl": "src"
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

@@ -235,7 +235,7 @@ export const editUser = async (req: Request, res: Response): Promise<any> => {
         phone,
         dob: getLocalDateTime(new Date(dob)),
         roleId,
-        status: status as UserStatus,
+        status: status?.toUpperCase() as UserStatus,
         address,
       },
     });

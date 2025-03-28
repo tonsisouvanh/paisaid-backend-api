@@ -6,8 +6,8 @@ import {
   updateCategory,
 } from "../controllers/category.controller";
 import express from "express";
-import { authenticate } from "../middleware/authMiddleware";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -16,16 +16,11 @@ router.get("/", getCategories);
 router.get("/:id", getCategory);
 
 // Admin-only routes
-router.post("/create", authenticate, authorizePermissions(""), createCategory);
-router.put(
-  "/:id/update",
-  authenticate,
-  authorizePermissions(""),
-  updateCategory
-);
+router.post("/create", verifyJWT, authorizePermissions(""), createCategory);
+router.put("/:id/update", verifyJWT, authorizePermissions(""), updateCategory);
 router.delete(
   "/:id/delete",
-  authenticate,
+  verifyJWT,
   authorizePermissions(""),
   deleteCategory
 );

@@ -1,5 +1,5 @@
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -196,6 +196,7 @@ model Post {
   address      String? // Full address (e.g., "123 Main St, NYC")
   city         String? // For filtering
   country      String? // For filtering
+  email        String?
   latitude     Float? // For maps
   longitude    Float? // For maps
   phone        String? // Contact info
@@ -210,6 +211,12 @@ model Post {
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
   bookmarks    Bookmark[] // Users who bookmarked this
+  publishedAt  DateTime?   @default(now()) @map("published_at")
+
+  // Self relation
+  parentId String? @map("parent_id")
+  parent   Post?   @relation("ParentPost", fields: [parentId], references: [id])
+  posts    Post[]  @relation("ParentPost")
 
   @@index([categoryId])
   @@index([city])

@@ -32,15 +32,28 @@ async function main() {
   await prisma.tag.deleteMany();
 
   // Reset auto-increment values
-  await prisma.$queryRaw`ALTER TABLE categories AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE tags AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE role_permissions AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE permissions AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE users AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE roles AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE resources AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE menus AUTO_INCREMENT = 1`;
-  await prisma.$queryRaw`ALTER TABLE role_menus AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE categories AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE tags AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE role_permissions AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE permissions AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE users AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE roles AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE resources AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE menus AUTO_INCREMENT = 1`;
+  // await prisma.$queryRaw`ALTER TABLE role_menus AUTO_INCREMENT = 1`;
+
+  // ##################################################################### //
+  // ########################### For Prosgresql ########################## //
+  // ##################################################################### //
+  await prisma.$queryRaw`ALTER SEQUENCE categories_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE tags_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE role_permissions_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE permissions_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE roles_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE resources_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE menus_id_seq RESTART WITH 1;`;
+  await prisma.$queryRaw`ALTER SEQUENCE role_menus_id_seq RESTART WITH 1;`;
 
   for (const category of categoriesData) {
     await prisma.category.create({

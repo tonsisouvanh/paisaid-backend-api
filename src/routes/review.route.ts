@@ -8,8 +8,8 @@ import {
   approveReview,
   rejectReview,
 } from "../controllers/review.controller";
-import { authenticate } from "../middleware/authMiddleware";
-import { authorizePermissions } from "middleware/authorizeMiddleware";
+import { verifyJWT } from "../middleware/authMiddleware";
+import { authorizePermissions } from "../middleware/authorizeMiddleware";
 
 const router = express.Router();
 
@@ -18,20 +18,20 @@ router.get("/posts/:slug/reviews", getPostReviews);
 router.get("/reviews/:id", getReview);
 
 // Authenticated user routes
-router.post("/posts/:slug/reviews", authenticate, createReview);
-router.put("/reviews/:id", authenticate, updateReview);
-router.delete("/reviews/:id", authenticate, deleteReview);
+router.post("/posts/:slug/reviews", verifyJWT, createReview);
+router.put("/reviews/:id", verifyJWT, updateReview);
+router.delete("/reviews/:id", verifyJWT, deleteReview);
 
 // Admin-only routes
 router.patch(
   "/reviews/:id/approve",
-  authenticate,
+  verifyJWT,
   authorizePermissions("approve:post"),
   approveReview
 );
 router.patch(
   "/reviews/:id/reject",
-  authenticate,
+  verifyJWT,
   authorizePermissions("reject:post"),
   rejectReview
 );

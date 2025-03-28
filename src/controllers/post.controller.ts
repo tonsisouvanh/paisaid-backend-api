@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { PostStatus, Prisma } from "@prisma/client";
 import { Request, Response } from "express";
 import multer from "multer";
 import prisma from "../lib/prisma";
@@ -28,12 +28,20 @@ interface TrendingQueryParams {
 
 const postFilter = (
   queryParams: PostQueryParams,
-  isAdmin: boolean
+  isCms?: boolean
 ): Prisma.PostWhereInput => {
   const where: Prisma.PostWhereInput = {};
 
-  if (!isAdmin) {
-    where.status = "PUBLISHED";
+  if (!isCms) {
+    where.AND = [
+      { status: PostStatus.PUBLISHED },
+      // TODO: add published At
+      // {
+      //   publishedAt: {
+      //     not: null,
+      //   },
+      // },
+    ];
   }
 
   if (queryParams.categoryId) where.categoryId = queryParams.categoryId;
@@ -47,7 +55,7 @@ const postFilter = (
 };
 
 // ##################################################################### //
-// ######################### GET /api/v1/posts ######################### //
+// ######################### Get posts | GET api/v1/posts ######################## //
 // ##################################################################### //
 export const getPosts = async (req: Request, res: Response): Promise<any> => {
   const queryParams: PostQueryParams = {
@@ -64,8 +72,10 @@ export const getPosts = async (req: Request, res: Response): Promise<any> => {
     priceRange: req.query.priceRange as string,
     sort: req.query.sort as any,
   };
-  const isAdmin = req.user?.role === "admin";
-  const where = postFilter(queryParams, isAdmin);
+
+  const isCms = !!req.user?.role;
+
+  const where = postFilter(queryParams, isCms);
 
   try {
     const totalElements = await prisma.post.count({ where });
@@ -88,7 +98,10 @@ export const getPosts = async (req: Request, res: Response): Promise<any> => {
       include: {
         category: true,
         tags: true,
-        photos: { where: { isFeatured: true }, take: 1 },
+        // photos: { where: { isFeatured: true }, take: 1 },
+        photos: { take: 1 },
+        author: { select: { name: true, email: true } },
+        posts: true,
       },
     });
     return res.status(200).json({
@@ -111,15 +124,15 @@ export const getPosts = async (req: Request, res: Response): Promise<any> => {
 };
 
 // ##################################################################### //
-// ###################### GET /api/v1/posts/:slug ###################### //
+// ###################### Get Post Detail by id | Public | GET /api/v1/posts/:id/post-detail ###################### //
 // ##################################################################### //
 export const getPost = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
   try {
-    const isAdmin = req.user?.role === "admin";
+    const isCms = !!req.user?.role;
     // Increment viewCount in a transaction
     const post = await prisma.$transaction(async (tx) => {
-      if (!isAdmin) {
+      if (!isCms) {
         await tx.post.update({
           where: { id },
           data: { viewCount: { increment: 1 } },
@@ -169,6 +182,7 @@ export const createPost = async (req: Request, res: Response): Promise<any> => {
       longitude,
       phone,
       website,
+      status,
       openingHours,
     } = req.body;
     // Type guard for req.files
@@ -203,6 +217,7 @@ export const createPost = async (req: Request, res: Response): Promise<any> => {
       phone,
       website,
       openingHours,
+      status,
       authorId: req.user!.userId, // Non-null assertion since auth middleware guarantees user
     };
 
@@ -219,7 +234,12 @@ export const createPost = async (req: Request, res: Response): Promise<any> => {
         priceRange: postData.priceRange,
         address: postData.address,
         city: postData.city,
+        status: postData.status,
         country: postData.country,
+        publishedAt:
+          status?.toUpperCase() === PostStatus.PUBLISHED
+            ? getLocalDateTime()
+            : null,
         latitude: postData.latitude,
         longitude: postData.longitude,
         phone: postData.phone,
@@ -278,64 +298,8 @@ export const createPost = async (req: Request, res: Response): Promise<any> => {
 };
 
 // ##################################################################### //
-// ################### Update | PUT /api/v1/posts/:id ################## //
+// ################### Update Post | PUT /api/v1/posts/:id ################## //
 // ##################################################################### //
-// export const updatePost = async (req: Request, res: Response): Promise<any> => {
-//   const { id } = req.params;
-//   const {
-//     title,
-//     content,
-//     categoryId,
-//     tags,
-//     priceRange,
-//     address,
-//     city,
-//     country,
-//     latitude,
-//     longitude,
-//     phone,
-//     website,
-//     openingHours,
-//   } = req.body;
-//   try {
-//     const post = await prisma.post.update({
-//       where: { id },
-//       data: {
-//         title,
-//         slug: title ? slugify(title) : undefined,
-//         content,
-//         categoryId,
-//         tags: tags ? { set: tags.map((id: number) => ({ id })) } : undefined,
-//         priceRange,
-//         address,
-//         city,
-//         country,
-//         latitude,
-//         longitude,
-//         phone,
-//         website,
-//         openingHours,
-//         updatedAt: getLocalDateTime(),
-//       },
-//     });
-//     return res
-//       .status(200)
-//       .json({ success: true, message: "Post updated", data: post });
-//   } catch (error: any) {
-//     console.error("Error updating post:", error);
-//     if (
-//       error instanceof Prisma.PrismaClientKnownRequestError &&
-//       error.code === "P2002"
-//     ) {
-//       return res
-//         .status(409)
-//         .json({ success: false, message: "Slug already exists" });
-//     }
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Failed to update post" });
-//   }
-// };
 export const updatePost = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params; // Post ID from URL
@@ -419,6 +383,10 @@ export const updatePost = async (req: Request, res: Response): Promise<any> => {
         address: postData.address,
         city: postData.city,
         country: postData.country,
+        publishedAt:
+          status?.toUpperCase() === PostStatus.PUBLISHED
+            ? getLocalDateTime()
+            : null,
         latitude: postData.latitude,
         longitude: postData.longitude,
         phone: postData.phone,

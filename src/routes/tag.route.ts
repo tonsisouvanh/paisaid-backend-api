@@ -6,8 +6,8 @@ import {
   updateTag,
   deleteTag,
 } from "../controllers/tag.controller";
-import { authenticate } from "../middleware/authMiddleware";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -16,8 +16,8 @@ router.get("/", getTags);
 router.get("/:id", getTag);
 
 // Admin-only routes
-router.post("/create", authenticate, authorizePermissions(), createTag);
-router.put("/:id/update", authenticate, authorizePermissions(), updateTag);
-router.delete("/:id/delete", authenticate, authorizePermissions(), deleteTag);
+router.post("/create", verifyJWT, authorizePermissions(), createTag);
+router.put("/:id/update", verifyJWT, authorizePermissions(), updateTag);
+router.delete("/:id/delete", verifyJWT, authorizePermissions(), deleteTag);
 
 export default router;

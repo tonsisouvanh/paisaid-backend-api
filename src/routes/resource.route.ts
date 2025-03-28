@@ -1,4 +1,3 @@
-import { authenticate } from "../middleware/authMiddleware";
 import express, { Router } from "express";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
 import { validateData } from "../middleware/validationMiddleware";
@@ -14,10 +13,11 @@ import {
   getResource,
   getResources,
 } from "../controllers/resource.controller";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 
-router.use(authenticate);
+router.use(verifyJWT);
 
 router.get("/listing", authorizePermissions("view:resource"), getResources);
 router.get("/one/:id", authorizePermissions("view:resource"), getResource);

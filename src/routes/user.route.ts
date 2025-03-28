@@ -7,13 +7,13 @@ import {
   resetUserPassword,
 } from "../controllers/user.controller";
 import express, { Router } from "express";
-import { authenticate } from "../middleware/authMiddleware";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
 import { UserSchema } from "../schemas/user.schema";
 import { validateData } from "../middleware/validationMiddleware";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
-router.use(authenticate, authorizePermissions());
+router.use(verifyJWT, authorizePermissions());
 router.get("/listing", getUsers);
 router.post("/create", validateData(UserSchema), createUser);
 router.get("/one/:id", getUser);

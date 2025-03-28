@@ -10,11 +10,15 @@ import { errorHandler } from "./middleware/errorHandler";
 import { configureCloudinary } from "./config/cloudinary";
 
 // Initialize environment variables
-dotenv.config();
+// dotenv.config();
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? ".env" : ".env.local",
+  override: true,
+});
 // Create Express application
 const app: Express = express();
 // Define the port
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 
 configureCloudinary();
 
@@ -52,5 +56,5 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // To test on mobile
 // app.listen(PORT as number, "0.0.0.0", () => {
-//   console.log("Server running on http://0.0.0.0:8000");
+//   console.log(`Server running on http://0.0.0.0:${PORT}`);
 // });

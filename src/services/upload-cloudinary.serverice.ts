@@ -20,7 +20,10 @@ export const uploadImageToCloudinary = (
     stream.push(null);
 
     const uploadOptions: UploadApiOptions = {
-      folder: options.folder || "/paisaid/posts", // Default folder
+      folder:
+        process.env.NODE_ENV === "development"
+          ? "/paisaid/development/posts"
+          : options.folder || "/paisaid/posts", // Default folder
       public_id: options.publicId, // Custom file name (optional)
       overwrite: options.overwrite || false, // Overwrite if same public_id exists
       transformation: options.transformations

@@ -2,9 +2,14 @@ import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
 import { generateTokens } from "../lib/generateTokens";
 import prisma from "../lib/prisma";
-import { setRefreshTokenCookie } from "../lib/setCookies";
 import { getLocalDateTime } from "../lib/utils";
-import { authenticate } from "../middleware/authMiddleware";
+import { verifyJWT } from "../middleware/authMiddleware";
+import {
+  clearAccressToken,
+  clearRefreshToken,
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+} from "../lib/cookies";
 
 // ====================================================== //
 // =================== // Sign in user ================== //
@@ -65,12 +70,12 @@ export const signIn = async (
     //   },
     // });
 
-    // Set refresh token in HTTP-only cookie
+    // Set both tokens in HTTP-only cookies
+    setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
 
     res.json({
       message: "Login successful",
-      accessToken,
       user: {
         username: user.username,
         name: user.name,
@@ -93,30 +98,31 @@ export const refreshToken = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const { userId, roleId } = req.user;
-    const { accessToken, refreshToken } = generateTokens({
-      userId: userId,
-      roleId: roleId,
-      role: req.user.role,
+    const { userId, roleId, role } = req.user;
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens({
+      userId,
+      roleId,
+      role,
     });
 
-    // Store the new refresh token in the database
-    // await prisma.token.create({
-    //   data: {
-    //     userId,
-    //     token: refreshToken,
-    //     type: "refresh",
-    //     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    //   },
+    // Set new tokens in cookies
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, newRefreshToken);
+
+    // Optional: Update refresh token in database
+    // await prisma.token.update({
+    //   where: { userId_token: { userId, token: req.cookies.refresh_token } },
+    //   data: { token: newRefreshToken },
     // });
 
-    // Set the new refresh token in HTTP-only cookie
-    setRefreshTokenCookie(res, refreshToken);
-
-    // Send the new access token in the response
-    res.json({ accessToken });
-  } catch (error) {
-    next(error);
+    res.json({ message: "Token refreshed successfully" });
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Refresh token expired" });
+    }
+    console.error("Refresh token error:", error);
+    res.status(401).json({ message: "Invalid refresh token" });
   }
 };
 
@@ -129,14 +135,28 @@ export const signOut = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    await prisma.user.update({
-      where: { id: req.user.userId },
-      data: {
-        lastLoginAt: getLocalDateTime(),
-      },
+    const { userId } = req.user; // Retrieved from verifyJWT
+    if (userId) {
+      // Update user in database (e.g., log sign-out time or status)
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastLoginAt: getLocalDateTime(), // Example: Add a lastSignOut field
+          // Add other fields as needed
+        },
+      });
+    }
+    // Clear cookies with matching attributes
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      domain:
+        process.env.NODE_ENV === "production"
+          ? ".recruit.devton.xyz"
+          : undefined,
+      path: "/",
     });
-
-    // Clear the refresh token cookie
     res.clearCookie("refresh_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -144,7 +164,8 @@ export const signOut = async (
       domain:
         process.env.NODE_ENV === "production"
           ? ".recruit.devton.xyz"
-          : undefined, // Allow access across subdomains
+          : undefined,
+      path: "/",
     });
 
     res.json({ message: "Logout successful" });
@@ -152,6 +173,87 @@ export const signOut = async (
     console.error("Error signing out:", error);
     next(error);
   }
+};
+
+export const clearTokens = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const secret = req.headers["x-clear-token-secret"]; // Custom header
+    if (secret !== process.env.CLEAR_TOKEN_SECRET) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    clearAccressToken(res);
+    clearRefreshToken(res);
+
+    res.status(200).json({ message: "Tokens cleared successfully" });
+  } catch (error) {
+    console.error("Error clearing tokens:", error);
+    next(error);
+  }
+};
+
+export const getUserMenu = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  await verifyJWT(req, res, async () => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId }, // Adjust based on your JWT payload
+        include: {
+          role: {
+            include: {
+              roleMenus: {
+                include: { menu: true },
+              },
+            },
+          },
+        },
+      });
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const menus = user.role.roleMenus.map((rm) => ({
+        id: rm.menu.id,
+        name: rm.menu.name,
+        slug: rm.menu.slug,
+        path: rm.menu.path,
+        icon: rm.menu.icon,
+        parentId: rm.menu.parentId,
+        order: rm.menu.order,
+      }));
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role.name,
+          menus,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+};
+
+export const setRefreshToken = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ error: "Refresh token required" });
+  }
+
+  setRefreshTokenCookie(res, refreshToken);
+  res.status(200).json({ message: "Refresh token cookie set" });
 };
 
 // ====================================================== //
@@ -205,7 +307,7 @@ export const getMe = async (
       });
     } else {
       // For non-admin roles, use roleMenus
-      menus = user.role.roleMenus.map((rm) => ({
+      menus = user.role.roleMenus.map((rm: any) => ({
         id: rm.menu.id,
         name: rm.menu.name,
         slug: rm.menu.slug,
@@ -226,51 +328,4 @@ export const getMe = async (
   } catch (error) {
     next(error);
   }
-};
-
-export const getUserMenu = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  await authenticate(req, res, async () => {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.userId }, // Adjust based on your JWT payload
-        include: {
-          role: {
-            include: {
-              roleMenus: {
-                include: { menu: true },
-              },
-            },
-          },
-        },
-      });
-      if (!user) return res.status(404).json({ message: "User not found" });
-
-      const menus = user.role.roleMenus.map((rm) => ({
-        id: rm.menu.id,
-        name: rm.menu.name,
-        slug: rm.menu.slug,
-        path: rm.menu.path,
-        icon: rm.menu.icon,
-        parentId: rm.menu.parentId,
-        order: rm.menu.order,
-      }));
-
-      res.status(200).json({
-        success: true,
-        data: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role.name,
-          menus,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
 };

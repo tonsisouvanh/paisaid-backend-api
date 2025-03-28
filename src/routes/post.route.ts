@@ -13,16 +13,13 @@ import {
   publishPost,
   updatePost,
 } from "../controllers/post.controller";
-import {
-  authenticate,
-  authenticateOptional,
-} from "../middleware/authMiddleware";
 import { authorizePermissions } from "../middleware/authorizeMiddleware";
 import { validateData } from "../middleware/validationMiddleware";
 import { PostSchema } from "../schemas/post.schema";
 
 import multer, { FileFilterCallback } from "multer";
 import { getPostPhotos } from "../controllers/photo.controller";
+import { verifyJWT, verifyJWTOptional } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -49,16 +46,16 @@ const upload = multer({
 });
 
 // Public routes
-router.get("/", authenticateOptional, getPosts);
-router.get("/trending", getTrendingPosts);
-router.get("/:id/detail", authenticateOptional, getPost);
+router.get("/", verifyJWTOptional, getPosts);
+router.get("/:id/post-detail", verifyJWTOptional, getPost);
 router.get("/:slug/nearby", getNearbyPosts);
+router.get("/trending", getTrendingPosts);
 
 // Admin-only routes
 router.post(
   "/create",
   upload.array("images", 5),
-  authenticate,
+  verifyJWT,
   authorizePermissions("create:post"),
   validateData(PostSchema),
   createPost
@@ -66,7 +63,7 @@ router.post(
 
 router.put(
   "/:id/update",
-  authenticate,
+  verifyJWT,
   authorizePermissions("update:post"),
   upload.array("images", 5),
   updatePost
@@ -74,32 +71,22 @@ router.put(
 
 router.delete(
   "/bulk-delete",
-  authenticate,
+  verifyJWT,
   authorizePermissions("delete:post"),
   bulkDeletePosts
 );
 
-router.delete("/:id", authenticate, authorizePermissions(""), deletePost);
+router.delete("/:id", verifyJWT, authorizePermissions(""), deletePost);
 
 router.patch("/:id/increment-view", incrementViewCount); // Could be public or protected
 
-router.patch(
-  "/:id/publish",
-  authenticate,
-  authorizePermissions(""),
-  publishPost
-);
+router.patch("/:id/publish", verifyJWT, authorizePermissions(""), publishPost);
 
-router.patch(
-  "/:id/archive",
-  authenticate,
-  authorizePermissions(""),
-  archivePost
-);
+router.patch("/:id/archive", verifyJWT, authorizePermissions(""), archivePost);
 
 router.post(
   "/bulk-create",
-  authenticate,
+  verifyJWT,
   authorizePermissions("bulk_delete:post"),
   bulkCreatePosts
 );

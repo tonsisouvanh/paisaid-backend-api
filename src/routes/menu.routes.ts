@@ -1,6 +1,5 @@
 import express from "express";
 
-import { authenticate } from "../middleware/authMiddleware"; // Assuming you have this for auth
 import {
   createMenu,
   deleteMenu,
@@ -9,11 +8,12 @@ import {
   reorderMenus,
   updateMenu,
 } from "../controllers/menu.controller";
+import { verifyJWT } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
 // Apply authentication middleware (assuming only admins can access these routes)
-router.use(authenticate);
+router.use(verifyJWT);
 
 // Menu routes
 router.get("/listing", getMenus); // GET /api/v1/menus/list
