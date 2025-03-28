@@ -7,7 +7,7 @@ export const REFRESH_TOKEN_COOKIE_MAX_AGE_DEV = 60 * 60 * 1000; // 1 hour
 
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === "production"
-    ? ".paisaid-backend-api.onrender.com"
+    ? ".paisaid-cms.devton.xyz"
     : "localhost";
 
 export const setAccessTokenCookie = (
