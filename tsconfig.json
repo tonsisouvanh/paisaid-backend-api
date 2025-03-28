@@ -46,8 +46,7 @@
     "allowJs": true,
     "noEmit": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "baseUrl": "src"
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
