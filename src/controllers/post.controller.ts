@@ -457,6 +457,7 @@ export const updatePost = async (req: Request, res: Response): Promise<any> => {
 };
 
 // DELETE /api/v1/posts/:id
+//TODO: Hanlde delete image from cloundinary if post contains images
 export const deletePost = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
   try {

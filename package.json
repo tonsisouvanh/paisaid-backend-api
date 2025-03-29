@@ -4,7 +4,7 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "nodemon src/server.ts",
+    "dev": "dotenv -e .env.local nodemon src/server.ts",
     "migrate:dev": "dotenv -e .env.local npx prisma migrate dev",
     "generate": "dotenv -e .env.local npx prisma generate",
     "db:migrate:dev": "dotenv -e .env.local npx prisma migrate dev && dotenv -e .env.local npx prisma generate",

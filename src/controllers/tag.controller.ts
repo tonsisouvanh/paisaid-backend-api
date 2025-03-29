@@ -21,10 +21,11 @@ const tagFilter = (queryParams: TagQueryParams): Prisma.TagWhereInput => {
 
 // GET /api/v1/tags
 export const getTags = async (req: Request, res: Response): Promise<any> => {
+  const searchParams = new URLSearchParams(req.query as any);
   const queryParams: TagQueryParams = {
-    page: parseInt(req.query.page as string) || 1,
-    limit: parseInt(req.query.limit as string) || 10,
-    q: req.query.q as string,
+    page: parseInt(searchParams.get("page") || "0", 10),
+    limit: parseInt(searchParams.get("limit") || "0", 10),
+    q: searchParams.get("q") || "",
   };
   const where = tagFilter(queryParams);
 
@@ -38,8 +39,11 @@ export const getTags = async (req: Request, res: Response): Promise<any> => {
 
     const tags = await prisma.tag.findMany({
       where,
-      skip: (adjustedPage - 1) * (queryParams.limit || 10),
-      take: queryParams.limit,
+      skip:
+        queryParams.page && queryParams.limit
+          ? (adjustedPage - 1) * queryParams.limit
+          : undefined,
+      take: queryParams.limit || undefined,
       orderBy: { name: "asc" },
     });
 

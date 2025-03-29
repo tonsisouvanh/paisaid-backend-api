@@ -158,7 +158,7 @@ export const createUser = async (
         name,
         email,
         address,
-        gender: gender ?? "other",
+        gender: gender ?? "OTHER",
         phone,
         isActive: isActive ?? false,
         roleId: roleId || 1,

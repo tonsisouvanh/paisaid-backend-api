@@ -10,11 +10,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { configureCloudinary } from "./config/cloudinary";
 
 // Initialize environment variables
-// dotenv.config();
-dotenv.config({
-  path: process.env.NODE_ENV === "production" ? ".env" : ".env.local",
-  override: true,
-});
+dotenv.config();
 // Create Express application
 const app: Express = express();
 // Define the port
