@@ -225,34 +225,57 @@ export const updatePhoto = async (
 // ##################################################################### //
 // ############## Delete Photo | DELETE /photos/:id/delete ############# //
 // ##################################################################### //
+
 export const deletePhoto = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
     const { id } = req.params; // Photo ID from URL
-    // Fetch the photo to ensure it exists and get its details
+
+    // Fetch the photo with its parent post
     const photo = await prisma.photo.findUnique({
       where: { id: Number(id) },
-      include: { post: true }, // Include post to verify ownership if needed
+      include: { post: true }, // Include post for ownership check and relation info
     });
+
     if (!photo) {
       return res
         .status(404)
         .json({ success: false, message: "Photo not found" });
     }
 
+    // Check authorization (only the post author can delete)
+    if (photo.post.authorId !== req.user.userId) {
+      return res.status(200).json({
+        errorCode: "CAN_ONLY_DELETE_PHOTOS_OF_YOUR_OWN_POST",
+        status: "FORBIDDEN",
+        message: "Forbidden: You can only delete photos from your own posts",
+      });
+    }
+
     // Delete from Cloudinary
     await deleteImageFromCloudinary(photo.publicId);
 
-    // Delete from Prisma database
+    // Delete the photo from Prisma (this automatically removes it from Post.photos)
     await prisma.photo.delete({
       where: { id: Number(id) },
     });
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Photo deleted successfully" });
+    // Optional: Fetch the updated Post to confirm the photo is removed
+    const updatedPost = await prisma.post.findUnique({
+      where: { id: photo.postId },
+      include: { photos: true }, // Include remaining photos
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Photo deleted successfully",
+      data: {
+        deletedPhotoId: Number(id),
+        updatedPost, // Return the updated Post with remaining photos
+      },
+    });
   } catch (error: any) {
     console.error("Error deleting photo:", error);
     if (error.code === "P2025") {
