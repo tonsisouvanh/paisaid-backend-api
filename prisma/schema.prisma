@@ -249,14 +249,15 @@ model Review {
 // Photo model
 model Photo {
   id         Int      @id @default(autoincrement())
-  url        String // S3 or similar URL
+  url        String
   publicId   String   @map("public_id")
-  altText    String?  @map("alt_text") // SEO/accessibility
+  altText    String?  @map("alt_text")
   userId     Int?     @map("user_id")
   user       User?    @relation(fields: [userId], references: [id])
   postId     String   @map("post_id")
   post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  isFeatured Boolean  @default(false) @map("is_featured") // Highlighted photo
+  isFeatured Boolean  @default(false) @map("is_featured")
+  order      Int?     @default(0)
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([postId])

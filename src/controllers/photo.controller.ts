@@ -13,6 +13,12 @@ interface QueryParams {
   q?: string;
 }
 
+// Request body interface for reorder
+interface ReorderPhotoInput {
+  id: number;
+  order: number;
+}
+
 // Function to construct the Prisma where filter based on query parameters
 const queryFilter = (queryParams: QueryParams): Prisma.PhotoWhereInput => {
   const where: Prisma.PhotoWhereInput = {};
@@ -68,7 +74,7 @@ export const getPostPhotos = async (
           ? (adjustedPage - 1) * queryParams.limit
           : undefined,
       take: queryParams.limit || undefined,
-      orderBy: { createdAt: "desc" },
+      orderBy: { order: "asc" }, // Changed from createdAt to order
     });
 
     return res.status(200).json({
@@ -292,5 +298,85 @@ export const deletePhoto = async (
     return res
       .status(500)
       .json({ success: false, message: "Failed to delete photo" });
+  }
+};
+
+// ##################################################################### //
+//  PATCH /posts/:slug/photos/reorder - Reorder photos for a post (admin only)  //
+// ##################################################################### //
+export const reorderPhotos = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { slug } = req.params;
+    const photosToReorder: ReorderPhotoInput[] = req.body; // Array of { id, order }
+
+    // Find the post
+    const post = await prisma.post.findUnique({
+      where: { id: slug },
+      include: { photos: true }, // Include current photos for validation
+    });
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+
+    // Check authorization (admin or post author; adjust as needed)
+    // Assuming 'admin' role is checked via authorizePermissions("reorder:photos")
+    // If only post author should reorder, uncomment the following:
+    // if (post.authorId !== req.user.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Forbidden: You can only reorder photos for your own posts",
+    //   });
+    // }
+
+    // Verify all photo IDs belong to this post
+    const photoIds = photosToReorder.map((p) => p.id);
+    const existingPhotoIds = post.photos.map((p) => p.id);
+    const invalidIds = photoIds.filter((id) => !existingPhotoIds.includes(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid photo IDs: ${invalidIds.join(
+          ", "
+        )} do not belong to this post`,
+      });
+    }
+
+    // Update photo orders in a transaction
+    await prisma.$transaction(
+      photosToReorder.map((photo) =>
+        prisma.photo.update({
+          where: { id: photo.id },
+          data: { order: photo.order },
+        })
+      )
+    );
+
+    // Fetch updated photos for response
+    const updatedPhotos = await prisma.photo.findMany({
+      where: { postId: post.id },
+      orderBy: { order: "asc" }, // Return in new order
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Photos reordered successfully",
+      data: updatedPhotos,
+    });
+  } catch (error: any) {
+    console.error("Error reordering photos:", error);
+    if (error.code === "P2025") {
+      return res
+        .status(404)
+        .json({ success: false, message: "One or more photos not found" });
+    }
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to reorder photos" });
   }
 };

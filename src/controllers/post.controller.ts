@@ -58,9 +58,10 @@ const postFilter = (
 // ######################### Get posts | GET api/v1/posts ######################## //
 // ##################################################################### //
 export const getPosts = async (req: Request, res: Response): Promise<any> => {
+  const searchParams = new URLSearchParams(req.query as any);
   const queryParams: PostQueryParams = {
-    page: parseInt(req.query.page as string) || 1,
-    limit: parseInt(req.query.limit as string) || 10,
+    page: parseInt(searchParams.get("page") || "0", 10),
+    limit: parseInt(searchParams.get("limit") || "0", 10),
     categoryId: req.query.categoryId
       ? parseInt(req.query.categoryId as string)
       : undefined,
@@ -99,7 +100,7 @@ export const getPosts = async (req: Request, res: Response): Promise<any> => {
         category: true,
         tags: true,
         // photos: { where: { isFeatured: true }, take: 1 },
-        photos: { take: 1 },
+        photos: { take: 1, orderBy: { order: "asc" } },
         author: { select: { name: true, email: true } },
         posts: true,
       },
@@ -143,7 +144,9 @@ export const getPost = async (req: Request, res: Response): Promise<any> => {
         include: {
           category: true,
           tags: true,
-          photos: true,
+          photos: {
+            orderBy: { order: "asc" },
+          },
           reviews: { take: 5, orderBy: { createdAt: "desc" } },
           questions: { take: 5, include: { answers: { take: 2 } } },
         },
@@ -679,7 +682,7 @@ export const bulkDeletePosts = async (
   res: Response
 ): Promise<any> => {
   const { ids } = req.body;
-  // Line 7-15: Added input validation
+  // Added input validation
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res
       .status(400)
@@ -687,7 +690,7 @@ export const bulkDeletePosts = async (
   }
 
   try {
-    // Line 27-37: Wrapped in transaction and added deletion count
+    // Wrapped in transaction and added deletion count
     const result = await prisma.$transaction(async (tx) => {
       // Optional: Delete related photos first (if schema doesn’t cascade)
       // await tx.photo.deleteMany({

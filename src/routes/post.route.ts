@@ -18,7 +18,7 @@ import { validateData } from "../middleware/validationMiddleware";
 import { PostSchema } from "../schemas/post.schema";
 
 import multer, { FileFilterCallback } from "multer";
-import { getPostPhotos } from "../controllers/photo.controller";
+import { getPostPhotos, reorderPhotos } from "../controllers/photo.controller";
 import { verifyJWT, verifyJWTOptional } from "../middleware/authMiddleware";
 import rateLimiterMiddleware from "../middleware/rateLimitMiddleware";
 
@@ -91,8 +91,6 @@ const upload = multer({
 //   authorizePermissions("bulk_delete:post"),
 //   bulkCreatePosts
 // );
-
-// router.get("/:slug/photos", getPostPhotos);
 
 // Public Routes
 router.get(
@@ -252,6 +250,14 @@ router.get(
     message: "Too many photo requests. Please try again later.",
   }),
   getPostPhotos
+);
+
+router.patch(
+  "/:slug/photos/reorder",
+  verifyJWT,
+  authorizePermissions("reorder:photos"), // New permission for admins
+  // validateData(PhotoReorderSchema),
+  reorderPhotos
 );
 
 export default router;

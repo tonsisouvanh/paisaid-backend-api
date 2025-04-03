@@ -1,19 +1,3 @@
-// import { deletePhoto } from "../controllers/photo.controller";
-// import express from "express";
-// import { verifyJWT } from "../middleware/authMiddleware";
-// import { authorizePermissions } from "../middleware/authorizeMiddleware";
-
-// const router = express.Router();
-
-// router.delete(
-//   "/:id/delete",
-//   verifyJWT,
-//   authorizePermissions("delete:post_photo"),
-//   deletePhoto
-// );
-
-// export default router;
-
 import express from "express";
 import multer from "multer";
 
@@ -27,6 +11,8 @@ import { authorizePermissions } from "../middleware/authorizeMiddleware";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
+
+// PhotoReorderSchema
 
 // Authenticated routes
 router.post(
