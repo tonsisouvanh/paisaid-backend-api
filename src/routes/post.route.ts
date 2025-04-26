@@ -46,52 +46,6 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// // Public routes
-// router.get("/", verifyJWTOptional, getPosts);
-// router.get("/:id/post-detail", verifyJWTOptional, getPost);
-// router.get("/:slug/nearby", getNearbyPosts);
-// router.get("/trending", getTrendingPosts);
-
-// // Admin-only routes
-// router.post(
-//   "/create",
-//   upload.array("images", 5),
-//   verifyJWT,
-//   authorizePermissions("create:post"),
-//   validateData(PostSchema),
-//   createPost
-// );
-
-// router.put(
-//   "/:id/update",
-//   verifyJWT,
-//   authorizePermissions("update:post"),
-//   upload.array("images", 5),
-//   updatePost
-// ); // Add this
-
-// router.delete(
-//   "/bulk-delete",
-//   verifyJWT,
-//   authorizePermissions("delete:post"),
-//   bulkDeletePosts
-// );
-
-// router.delete("/:id", verifyJWT, authorizePermissions(""), deletePost);
-
-// router.patch("/:id/increment-view", incrementViewCount); // Could be public or protected
-
-// router.patch("/:id/publish", verifyJWT, authorizePermissions(""), publishPost);
-
-// router.patch("/:id/archive", verifyJWT, authorizePermissions(""), archivePost);
-
-// router.post(
-//   "/bulk-create",
-//   verifyJWT,
-//   authorizePermissions("bulk_delete:post"),
-//   bulkCreatePosts
-// );
-
 // Public Routes
 router.get(
   "/",
@@ -183,7 +137,7 @@ router.delete(
 router.delete(
   "/:id",
   verifyJWT,
-  authorizePermissions(""),
+  authorizePermissions(),
   rateLimiterMiddleware({
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 10, // 10 deletes per user
@@ -206,7 +160,7 @@ router.patch(
 router.patch(
   "/:id/publish",
   verifyJWT,
-  authorizePermissions(""),
+  authorizePermissions(),
   rateLimiterMiddleware({
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 20, // 20 publish actions per user
@@ -219,7 +173,7 @@ router.patch(
 router.patch(
   "/:id/archive",
   verifyJWT,
-  authorizePermissions(""),
+  authorizePermissions(),
   rateLimiterMiddleware({
     windowMs: 5 * 60 * 1000, // 5 minutes
     max: 20, // 20 archive actions per user

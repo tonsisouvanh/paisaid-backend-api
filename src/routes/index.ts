@@ -11,6 +11,7 @@ import postRoutes from "./post.route";
 import categoryRoutes from "./category.route";
 import tagRoutes from "./tag.route";
 import photoRoutes from "./photo.route";
+import bannerRoute from "./banner.route";
 const router = express.Router();
 
 router.use("/upload", uploadRoutes);
@@ -25,5 +26,6 @@ router.use("/posts", postRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/tags", tagRoutes);
 router.use("/photos", photoRoutes);
+router.use("/banners", bannerRoute);
 
 export default router;

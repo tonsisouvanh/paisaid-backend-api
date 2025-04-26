@@ -57,7 +57,7 @@ export const createPostWithImages = async (
     const result = await uploadImageToCloudinary(file.buffer, {
       folder: `paisaid/posts/${post.id}`,
       publicId: `image_${post.id}_${index}`, // Unique per image to avoid overwriting
-      transformations: { width: 800, height: 600, crop: "fit" },
+      // transformations: { width: 800, height: 600, crop: "fit" },
       overwrite: true,
     });
     return { url: result.secure_url, publicId: result.public_id };

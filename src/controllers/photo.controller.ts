@@ -142,7 +142,7 @@ export const uploadPhoto = async (
     const result = await uploadImageToCloudinary(file.buffer, {
       folder: `paisaid/posts`,
       publicId: `image_${post.id}_${Date.now()}`, // Unique ID to avoid overwriting
-      transformations: { width: 800, height: 600, crop: "fit" },
+      // transformations: { width: 800, height: 600, crop: "fit" },
       overwrite: true,
     });
 
