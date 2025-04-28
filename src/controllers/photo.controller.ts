@@ -252,13 +252,13 @@ export const deletePhoto = async (
     }
 
     // Check authorization (only the post author can delete)
-    if (photo.post.authorId !== req.user.userId) {
-      return res.status(200).json({
-        errorCode: "CAN_ONLY_DELETE_PHOTOS_OF_YOUR_OWN_POST",
-        status: "FORBIDDEN",
-        message: "Forbidden: You can only delete photos from your own posts",
-      });
-    }
+    // if (photo.post.authorId !== req.user.userId) {
+    //   return res.status(200).json({
+    //     errorCode: "CAN_ONLY_DELETE_PHOTOS_OF_YOUR_OWN_POST",
+    //     status: "FORBIDDEN",
+    //     message: "Forbidden: You can only delete photos from your own posts",
+    //   });
+    // }
 
     // Delete from Cloudinary
     await deleteImageFromCloudinary(photo.publicId);
